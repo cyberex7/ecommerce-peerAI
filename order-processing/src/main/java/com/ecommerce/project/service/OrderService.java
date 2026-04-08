@@ -13,4 +13,9 @@ public interface OrderService {
     OrderDTO updateOrder(Long orderId, String status);
 
     OrderResponse getAllSellerOrders(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
+
+    // ── new — called by the Kafka consumer ───────────────────────────────
+
+    @Transactional
+    int promotePendingToProcessing();
 }

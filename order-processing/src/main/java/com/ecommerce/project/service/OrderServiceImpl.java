@@ -183,5 +183,15 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    // ── NEW: called by ReconciliationEventConsumer via Kafka ──────────────
+
+    @Override
+    @Transactional
+    public int promotePendingToProcessing() {
+        // Single SQL: UPDATE orders SET order_status='PROCESSING' WHERE order_status='PENDING'
+        // No entities loaded into memory — safe at any scale.
+        return orderRepository.bulkPromotePendingToProcessing();
+    }
+
 
 }

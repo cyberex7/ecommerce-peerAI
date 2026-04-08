@@ -6,7 +6,6 @@ import com.ecommerce.project.model.Category;
 import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,9 +21,6 @@ public class CategoryServiceImpl implements CategoryService{
     @Autowired
     private CategoryRepository categoryRepository;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
     @Override
     public CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
@@ -39,7 +35,7 @@ public class CategoryServiceImpl implements CategoryService{
             throw new APIException("No category created till now.");
 
         List<CategoryDTO> categoryDTOS = categories.stream()
-                .map(category -> modelMapper.map(category, CategoryDTO.class))
+                .map(this::toCategoryDTO)
                 .toList();
 
         CategoryResponse categoryResponse = new CategoryResponse();
@@ -54,12 +50,12 @@ public class CategoryServiceImpl implements CategoryService{
 
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
-        Category category = modelMapper.map(categoryDTO, Category.class);
+        Category category = toCategory(categoryDTO);
         Category categoryFromDb = categoryRepository.findByCategoryName(category.getCategoryName());
         if (categoryFromDb != null)
             throw new APIException("Category with the name " + category.getCategoryName() + " already exists !!!");
         Category savedCategory = categoryRepository.save(category);
-        return modelMapper.map(savedCategory, CategoryDTO.class);
+        return toCategoryDTO(savedCategory);
     }
 
     @Override
@@ -68,7 +64,7 @@ public class CategoryServiceImpl implements CategoryService{
                 .orElseThrow(() -> new ResourceNotFoundException("Category","categoryId",categoryId));
 
         categoryRepository.delete(category);
-        return modelMapper.map(category, CategoryDTO.class);
+        return toCategoryDTO(category);
     }
 
     @Override
@@ -76,9 +72,23 @@ public class CategoryServiceImpl implements CategoryService{
         Category savedCategory = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category","categoryId",categoryId));
 
-        Category category = modelMapper.map(categoryDTO, Category.class);
+        Category category = toCategory(categoryDTO);
         category.setCategoryId(categoryId);
         savedCategory = categoryRepository.save(category);
-        return modelMapper.map(savedCategory, CategoryDTO.class);
+        return toCategoryDTO(savedCategory);
+    }
+
+    private CategoryDTO toCategoryDTO(Category category) {
+        CategoryDTO categoryDTO = new CategoryDTO();
+        categoryDTO.setCategoryId(category.getCategoryId());
+        categoryDTO.setCategoryName(category.getCategoryName());
+        return categoryDTO;
+    }
+
+    private Category toCategory(CategoryDTO categoryDTO) {
+        Category category = new Category();
+        category.setCategoryId(categoryDTO.getCategoryId());
+        category.setCategoryName(categoryDTO.getCategoryName());
+        return category;
     }
 }
